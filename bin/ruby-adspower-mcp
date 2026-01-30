@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "dotenv/load" if File.exist?(File.join(__dir__, "..", ".env"))
+require_relative "../lib/ruby_adspower_mcp"
+
+RubyAdsPowerMCP::Server.new.run

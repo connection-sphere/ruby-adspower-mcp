@@ -1,0 +1,14 @@
+.bundle/
+/vendor/bundle/
+/log/
+/tmp/
+*.log
+*.tmp
+*.swp
+.env
+.env.*
+.DS_Store
+.idea/
+.vscode/
+coverage/
+selenium-screenshots/
