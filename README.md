@@ -8,7 +8,7 @@ Model Context Protocol (MCP) server that lets GitHub Copilot Chat spin up real A
 - **Safety & cleanup:** Reuses [adspower-client](https://github.com/MassProspecting/adspower-client) primitives for profile lifecycle, so every browser session is started/stopped exactly as AdsPower expects.
 
 ## Requirements
-- Ruby 3.1+
+- Ruby 3.1.2
 - AdsPower desktop app (or headless server) running on the same host
 - Valid AdsPower API key with Local API enabled
 - ChromeDriver matching the AdsPower Chromium build (handled by your AdsPower install)
