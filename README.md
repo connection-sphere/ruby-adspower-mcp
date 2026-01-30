@@ -2,6 +2,15 @@
 
 Model Context Protocol (MCP) server that lets GitHub Copilot Chat spin up real AdsPower browser profiles, validate frontend builds, and iterate on Selenium-based RPA bots until they pass live testing.
 
+## Prompt Example
+
+```text
+1. Use adspower.start_session with {"profile_id":"koyynup","headless":false}
+2. In the browser that you just opened, go to the page `https://google.com`
+3. Write into the file `google.rb` a script that executes a google seearch, and return an array of organic results, ignoring ads.
+4. Use the MCP `ruby-adspower-mcp` to test your own code and verify it is working fine.
+```
+
 ## Why this exists
 - **Frontend loops:** Render ERB/HTML/CSS/JS in a real AdsPower-controlled Chrome instance, inspect DOM/JS state, and re-run after each fix.
 - **Automation loops:** Execute Ruby automation snippets that receive the actual `Selenium::WebDriver` instance, observe failures, and patch the script without leaving Copilot.
