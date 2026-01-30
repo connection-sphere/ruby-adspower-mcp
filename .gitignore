@@ -12,3 +12,4 @@
 .vscode/
 coverage/
 selenium-screenshots/
+Gemfile.lock
