@@ -57,6 +57,34 @@ Add `.vscode/mcp.json` to your project that uses this browser automation:
 
 Reload VS Code (Command Palette → “Developer: Reload Window”) after editing so Copilot picks up the new MCP server.
 
+## Running the server manually
+```bash
+bundle exec ruby bin/ruby-adspower-mcp
+```
+The server speaks JSON-RPC over stdio (as required by MCP). Normally Copilot launches it automatically; running it manually is useful for debugging environment issues.
+
+## Example Prompts
+
+```text
+In the `ruby-adspower-mcp` project, use adspower.start_session with {"profile_id":"YOUR_PROFILE","headless":false} so we have a live browser to debug the current signup form.
+```
+
+```text
+In the `ruby-adspower-mcp` project, call adspower.navigate for profile "YOUR_PROFILE" and load http://localhost:3000 to verify that yesterday's CSS fixes render correctly.
+```
+
+```text
+In the `ruby-adspower-mcp` project, run adspower.dom_snapshot with {"profile_id":"YOUR_PROFILE","locator":{"using":"css","value":"form#signup input"},"max_nodes":10} and summarize which inputs fail validation.
+```
+
+```text
+In the `ruby-adspower-mcp` project, execute adspower.execute_script using {"profile_id":"YOUR_PROFILE","script":"return window.__LAST_ERROR__ || null;"} to see if the frontend logged runtime errors.
+```
+
+```text
+In the `ruby-adspower-mcp` project, call adspower.run_workflow with {"profile_id":"YOUR_PROFILE","code":"driver.navigate.to('https://app.example.com/login'); driver.find_element(:css,'#email').send_keys('bot@example.com'); driver.find_element(:css,'#password').send_keys('secret', :enter); sleep 2; driver.title"} and report the workflow output.
+```
+
 ## Available MCP tools
 
 | Tool | What it does |
@@ -95,12 +123,6 @@ driver.find_element(:css, "#status").text
 - AdsPower plus Selenium are the source of truth. Keep the browser open while Copilot edits HTML/JS or Ruby automation, and re-run the relevant tool after every change.
 - The MCP server never mocks DOM responses; snapshots and script results come directly from the running tab.
 - When a workflow fails, Copilot should fix the code and call the tool again—repeat until the failure disappears.
-
-## Running the server manually
-```bash
-bundle exec ruby bin/ruby-adspower-mcp
-```
-The server speaks JSON-RPC over stdio (as required by MCP). Normally Copilot launches it automatically; running it manually is useful for debugging environment issues.
 
 ## Troubleshooting
 - **`ADSPOWER_API_KEY missing`** – export the key or create a `.env` file before starting the MCP server.
