@@ -9,6 +9,10 @@ Model Context Protocol (MCP) server that lets GitHub Copilot Chat spin up real A
 2. In the browser that you just opened, go to the page `https://google.com`
 3. Write into the file `google.rb` a script that executes a google seearch, and return an array of organic results, ignoring ads.
 4. Use the MCP `ruby-adspower-mcp` to test your own code and verify it is working fine.
+
+My AdsPower API key is `<your AdsPower API key here>`.
+
+Use the profile `<profile ID here>` for running your tests.
 ```
 
 ## Why this exists
