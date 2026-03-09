@@ -2,7 +2,7 @@
 
 Model Context Protocol (MCP) server that lets GitHub Copilot Chat spin up real AdsPower browser profiles, validate frontend builds, and iterate on Selenium-based RPA bots until they pass live testing.
 
-This MCP works with our [AdsPower Client](https://github.com/connection-sphere/adspower-client) gem
+This MCP works with our [AdsPower Client](https://github.com/connection-sphere/adspower-client) gem.
 
 ## Prompt Example
 
