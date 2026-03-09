@@ -71,8 +71,23 @@ module RubyAdsPowerMCP
                    headless: arguments.fetch("headless", nil),
                    read_timeout: arguments.fetch("read_timeout", BrowserManager::DEFAULT_READ_TIMEOUT)
                  )
+               when "adspower.attach_session"
+                 browser_manager.attach_session(
+                   arguments.fetch("profile_id"),
+                   headless: arguments.fetch("headless", nil),
+                   read_timeout: arguments.fetch("read_timeout", BrowserManager::DEFAULT_READ_TIMEOUT)
+                 )
                when "adspower.stop_session"
-                 browser_manager.stop_session(arguments.fetch("profile_id"))
+                 browser_manager.stop_session(
+                   arguments.fetch("profile_id"),
+                   force_stop_browser: arguments.fetch("force_stop_browser", nil)
+                 )
+               when "adspower.detach_session"
+                 browser_manager.stop_session(
+                   arguments.fetch("profile_id"),
+                   reason: "detach",
+                   force_stop_browser: false
+                 )
                when "adspower.navigate"
                  browser_manager.navigate(
                    arguments.fetch("profile_id"),
@@ -120,7 +135,27 @@ module RubyAdsPowerMCP
       @tools_definition ||= [
         {
           name: "adspower.start_session",
-          description: "Attach to an AdsPower profile and return session metadata.",
+          description: "Start or reuse an AdsPower profile and mark it as owned by MCP.",
+          input_schema: {
+            type: "object",
+            required: %w[profile_id],
+            properties: {
+              profile_id: { type: "string" },
+              headless: {
+                type: "boolean",
+                description: "Override the default headless mode for this session."
+              },
+              read_timeout: {
+                type: "integer",
+                description: "Selenium read timeout in seconds.",
+                minimum: 30
+              }
+            }
+          }
+        },
+        {
+          name: "adspower.attach_session",
+          description: "Attach MCP to an already-running AdsPower profile without taking ownership.",
           input_schema: {
             type: "object",
             required: %w[profile_id],
@@ -140,7 +175,22 @@ module RubyAdsPowerMCP
         },
         {
           name: "adspower.stop_session",
-          description: "Stop an AdsPower profile and close Selenium.",
+          description: "Stop session. By default it stops browser only for MCP-owned sessions; attached sessions are detached unless forced.",
+          input_schema: {
+            type: "object",
+            required: %w[profile_id],
+            properties: {
+              profile_id: { type: "string" },
+              force_stop_browser: {
+                type: "boolean",
+                description: "If true, always stop the AdsPower browser even for attached sessions."
+              }
+            }
+          }
+        },
+        {
+          name: "adspower.detach_session",
+          description: "Detach MCP from an attached session and keep the AdsPower browser running.",
           input_schema: {
             type: "object",
             required: %w[profile_id],

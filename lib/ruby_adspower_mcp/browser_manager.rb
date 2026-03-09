@@ -10,7 +10,7 @@ module RubyAdsPowerMCP
     DEFAULT_HEADLESS = false
     DEFAULT_READ_TIMEOUT = 180
 
-    Session = Struct.new(:driver, :headless, :started_at, keyword_init: true)
+    Session = Struct.new(:driver, :headless, :started_at, :owned_by_mcp, keyword_init: true)
 
     def initialize(env: ENV, logger: Logger.new($stderr))
       @env = env
@@ -28,29 +28,61 @@ module RubyAdsPowerMCP
         return session_info(profile, existing, reused: true)
       end
 
-      stop_session(profile, reason: "stale session") if existing
+      stop_session(profile, reason: "stale session", force_stop_browser: true) if existing
 
       driver = client.driver2(profile, headless: headless, read_timeout: read_timeout || DEFAULT_READ_TIMEOUT)
-      entry = Session.new(driver: driver, headless: headless, started_at: Time.now.utc)
+      entry = Session.new(driver: driver, headless: headless, started_at: Time.now.utc, owned_by_mcp: true)
       sessions[profile] = entry
-      session_info(profile, entry)
+      session_info(profile, entry).merge(attached: false)
     rescue => e
       sessions.delete(profile)
       raise e
     end
 
-    def stop_session(profile_id, reason: nil)
+    # Attach to a browser/profile that is already running (e.g. started by profile.rb).
+    # This session is marked as not owned by MCP, so detach/stop won't close it unless forced.
+    def attach_session(profile_id, headless: default_headless?, read_timeout: DEFAULT_READ_TIMEOUT)
+      profile = normalize_profile_id(profile_id)
+      existing = sessions[profile]
+      if existing && session_alive?(existing.driver)
+        existing.headless = headless unless headless.nil?
+        return session_info(profile, existing, reused: true).merge(attached: true)
+      end
+
+      stop_session(profile, reason: "stale session", force_stop_browser: false) if existing
+
+      raise "Profile #{profile} is not running. Start it first." unless client.check(profile)
+
+      driver = client.driver2(profile, headless: headless, read_timeout: read_timeout || DEFAULT_READ_TIMEOUT)
+      entry = Session.new(driver: driver, headless: headless, started_at: Time.now.utc, owned_by_mcp: false)
+      sessions[profile] = entry
+      session_info(profile, entry).merge(attached: true)
+    rescue => e
+      sessions.delete(profile)
+      raise e
+    end
+
+    # stop_browser:
+    # - nil: auto (true for owned sessions, false for attached sessions)
+    # - true: always attempt to stop AdsPower browser
+    # - false: detach MCP only
+    def stop_session(profile_id, reason: nil, force_stop_browser: nil)
       profile = normalize_profile_id(profile_id)
       entry = sessions.delete(profile)
       return { profile_id: profile, stopped: false, reason: "not_running" } unless entry
 
-      safe_quit(entry.driver)
-      client.stop(profile)
+      stop_browser = force_stop_browser.nil? ? !!entry.owned_by_mcp : !!force_stop_browser
+
+      if stop_browser
+        safe_quit(entry.driver)
+        client.stop(profile)
+      end
 
       {
         profile_id: profile,
         stopped: true,
-        reason: reason || "user_request"
+        reason: reason || "user_request",
+        mode: stop_browser ? "stopped_browser" : "detached_only"
       }
     rescue => e
       {
@@ -121,11 +153,15 @@ module RubyAdsPowerMCP
 
     def shutdown
       sessions.each do |profile_id, entry|
-        safe_quit(entry.driver)
-        begin
-          client.stop(profile_id)
-        rescue => e
-          logger.warn("stop failed for #{profile_id}: #{e.message}")
+        stop_browser = !!entry.owned_by_mcp
+
+        if stop_browser
+          safe_quit(entry.driver)
+          begin
+            client.stop(profile_id)
+          rescue => e
+            logger.warn("stop failed for #{profile_id}: #{e.message}")
+          end
         end
       end
       sessions.clear
@@ -207,7 +243,8 @@ module RubyAdsPowerMCP
         profile_id: profile_id,
         headless: session.headless,
         started_at: session.started_at.iso8601,
-        reused: reused
+        reused: reused,
+        owned_by_mcp: !!session.owned_by_mcp
       }
     end
 
