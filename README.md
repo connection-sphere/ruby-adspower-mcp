@@ -100,12 +100,18 @@ In the `ruby-adspower-mcp` project, execute adspower.execute_script using {"prof
 In the `ruby-adspower-mcp` project, call adspower.run_workflow with {"profile_id":"YOUR_PROFILE","code":"driver.navigate.to('https://app.example.com/login'); driver.find_element(:css,'#email').send_keys('bot@example.com'); driver.find_element(:css,'#password').send_keys('secret', :enter); sleep 2; driver.title"} and report the workflow output.
 ```
 
+```text
+I already launched a browser from `profile.rb`. Use adspower.attach_session with {"profile_id":"YOUR_PROFILE"}, inspect the DOM around my failing selector, and keep the browser running when done.
+```
+
 ## Available MCP tools
 
 | Tool | What it does |
 | --- | --- |
 | `adspower.start_session` | Starts or reuses an AdsPower profile and returns session metadata (headless mode, start time). |
-| `adspower.stop_session` | Quits Selenium, stops the AdsPower browser, and frees resources. |
+| `adspower.attach_session` | Attaches MCP to an AdsPower profile that is already running (for example, started by `profile.rb`). |
+| `adspower.stop_session` | Stops/detaches session. Stops browser for MCP-owned sessions; attached sessions are detached unless forced. |
+| `adspower.detach_session` | Detaches MCP from the session and keeps the external browser running. |
 | `adspower.navigate` | Calls `driver.get(url)` so Copilot can load local builds or remote staging URLs. |
 | `adspower.dom_snapshot` | Returns full HTML or a limited set of nodes found via CSS/XPath/ID/class selectors. |
 | `adspower.execute_script` | Runs arbitrary JavaScript in the tab to check DOM state, fire events, or mutate the UI. |
@@ -134,6 +140,32 @@ driver.find_element(:css, "#status").text
 3. Inspect the returned hash: when `status == "ok"` you get the Ruby return value plus captured stdout; when `status == "error"` you receive the exception class/message/backtrace for diagnosis.
 4. Iterate until the automation completes the workflow, then stop the session.
 
+## Attach to a browser started by `profile.rb`
+
+You can debug a live browser launched outside MCP (for example by `sdk/p/profile.rb`) without changing that script.
+
+1. Run your `profile.rb` command normally so AdsPower browser is already open.
+2. Ask Copilot to call:
+
+```text
+adspower.attach_session with {"profile_id":"YOUR_PROFILE"}
+```
+
+3. Use `adspower.dom_snapshot`, `adspower.execute_script`, or `adspower.run_workflow` to inspect/fix the failing path.
+4. When done, call:
+
+```text
+adspower.detach_session with {"profile_id":"YOUR_PROFILE"}
+```
+
+This keeps the browser/session alive for `profile.rb`.
+
+If you really need to terminate that externally-started browser from MCP, call:
+
+```text
+adspower.stop_session with {"profile_id":"YOUR_PROFILE","force_stop_browser":true}
+```
+
 ## Validating every change
 - AdsPower plus Selenium are the source of truth. Keep the browser open while Copilot edits HTML/JS or Ruby automation, and re-run the relevant tool after every change.
 - The MCP server never mocks DOM responses; snapshots and script results come directly from the running tab.
@@ -143,6 +175,7 @@ driver.find_element(:css, "#status").text
 - **`ADSPOWER_API_KEY missing`** – export the key or create a `.env` file before starting the MCP server.
 - **Browser never opens** – confirm the AdsPower desktop app (or headless server) is running and the Local API port matches `ADSPOWER_PORT`.
 - **`profile_id is required`** – every tool needs the target AdsPower profile ID; create one ahead of time via the AdsPower UI or `adspower-client` gem.
+- **`Profile <id> is not running. Start it first.`** – `adspower.attach_session` only works if the profile/browser is already active.
 - **Hanging sessions** – run `adspower.stop_session` or kill the profile from AdsPower’s UI; the MCP server also cleans up on exit.
 
 ## References
